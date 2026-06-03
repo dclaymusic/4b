@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4B Group 1 — Guess the Song</title>
+
+  <style>
+    :root {
+      --bg: #f5f5f4;
+      --fg: #1f2933;
+      --accent: #7c8da6;
+      --correct: #2f7d4f;
+      --wrong: #9b2c2c;
+      --card: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      min-height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+    }
+
+    body {
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 14px;
+    }
+
+    .app {
+      width: min(980px, 100%);
+      height: calc(100vh - 28px);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 4.2vh, 3rem);
+      line-height: 0.95;
+      margin: 0 0 4px;
+      letter-spacing: -0.045em;
+    }
+
+    .subtitle {
+      font-size: clamp(0.92rem, 1.8vh, 1.1rem);
+      margin: 0 auto 12px;
+      max-width: 720px;
+      opacity: 0.8;
+    }
+
+    .main-card {
+      background: var(--card);
+      border: 3px solid var(--fg);
+      border-radius: 24px;
+      padding: clamp(14px, 2.2vh, 24px);
+      box-shadow: 8px 8px 0 var(--fg);
+      max-height: calc(100vh - 90px);
+      overflow: hidden;
+    }
+
+    .song-status {
+      font-size: clamp(0.82rem, 1.6vh, 1rem);
+      font-weight: 800;
+      opacity: 0.75;
+      margin-bottom: 10px;
+    }
+
+    .play-button {
+      width: clamp(112px, 22vh, 170px);
+      height: clamp(112px, 22vh, 170px);
+      border-radius: 999px;
+      border: 5px solid var(--fg);
+      background: var(--accent);
+      color: white;
+      font-size: clamp(2.4rem, 7vh, 4.5rem);
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 7px 7px 0 var(--fg);
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.2s ease;
+      margin-bottom: 16px;
+      line-height: 1;
+    }
+
+    .play-button:hover:not(:disabled) {
+      transform: translate(-2px, -2px);
+      box-shadow: 9px 9px 0 var(--fg);
+    }
+
+    .play-button:active:not(:disabled) {
+      transform: translate(4px, 4px);
+      box-shadow: 3px 3px 0 var(--fg);
+    }
+
+    .play-button.playing {
+      background: var(--fg);
+    }
+
+    .play-button:disabled {
+      cursor: default;
+      opacity: 0.5;
+    }
+
+    .options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 0 auto 14px;
+    }
+
+    .option-button {
+      border: 3px solid var(--fg);
+      background: var(--bg);
+      color: var(--fg);
+      border-radius: 16px;
+      padding: clamp(9px, 1.7vh, 14px) 12px;
+      font-size: clamp(0.88rem, 1.9vh, 1.12rem);
+      font-weight: 750;
+      cursor: pointer;
+      min-height: clamp(54px, 8vh, 78px);
+      line-height: 1.15;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.2s ease;
+    }
+
+    .option-button:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--accent) 18%, white);
+      transform: translate(-2px, -2px);
+      box-shadow: 4px 4px 0 var(--fg);
+    }
+
+    .option-button:disabled {
+      cursor: default;
+      opacity: 0.88;
+    }
+
+    .option-button.selected-correct {
+      background: color-mix(in srgb, var(--correct) 20%, white);
+      border-color: var(--correct);
+      color: var(--correct);
+    }
+
+    .option-button.selected-wrong {
+      background: color-mix(in srgb, var(--wrong) 20%, white);
+      border-color: var(--wrong);
+      color: var(--wrong);
+    }
+
+    .result {
+      min-height: clamp(72px, 11vh, 105px);
+      border: 3px dashed var(--fg);
+      border-radius: 18px;
+      padding: 12px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 12px;
+      background: color-mix(in srgb, var(--accent) 10%, white);
+    }
+
+    .result.visible {
+      display: flex;
+    }
+
+    .result-status {
+      font-size: clamp(1.2rem, 3vh, 2rem);
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .result-details {
+      font-size: clamp(0.92rem, 1.9vh, 1.15rem);
+      line-height: 1.28;
+    }
+
+    .try-again {
+      display: inline-block;
+      border: 3px solid var(--fg);
+      border-radius: 999px;
+      padding: clamp(10px, 1.7vh, 14px) 24px;
+      font-size: clamp(0.95rem, 1.8vh, 1.08rem);
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+      margin: 0;
+      background: var(--fg);
+      color: white;
+      box-shadow: 5px 5px 0 var(--accent);
+    }
+
+    .try-again:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 7px 7px 0 var(--accent);
+    }
+
+    .error-message {
+      display: none;
+      margin-top: 10px;
+      padding: 10px;
+      border: 3px solid var(--wrong);
+      border-radius: 14px;
+      color: var(--wrong);
+      font-weight: 800;
+      background: color-mix(in srgb, var(--wrong) 10%, white);
+      font-size: 0.9rem;
+    }
+
+    .error-message.visible {
+      display: block;
+    }
+
+    @media (max-width: 680px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        overflow: auto;
+        align-items: flex-start;
+      }
+
+      .app {
+        height: auto;
+      }
+
+      .main-card {
+        max-height: none;
+        box-shadow: 6px 6px 0 var(--fg);
+        border-radius: 22px;
+      }
+
+      .options {
+        grid-template-columns: 1fr;
+      }
+
+      .option-button {
+        min-height: auto;
+      }
+    }
+
+    @media (max-height: 700px) {
+      .play-button {
+        width: 112px;
+        height: 112px;
+        font-size: 2.8rem;
+        margin-bottom: 10px;
+      }
+
+      .main-card {
+        padding: 12px;
+      }
+
+      .result {
+        min-height: 66px;
+      }
+
+      .option-button {
+        min-height: 48px;
+        padding: 8px 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <h1>4B Group 1</h1>
+    <p class="subtitle">Guess the Song from the Civil Rights Movement</p>
+
+    <section class="main-card">
+      <div id="songStatus" class="song-status">A mystery song is ready.</div>
+
+      <button id="playButton" class="play-button" aria-label="Play audio">
+        ▶
+      </button>
+
+      <div class="options">
+        <button class="option-button" data-answer="1">1. We Shall Not Be Moved</button>
+        <button class="option-button" data-answer="2">2. Hallelujah I’m Travelin’</button>
+        <button class="option-button" data-answer="3">3. Eyes on the Prize</button>
+        <button class="option-button" data-answer="4">4. A Change is Gonna Come</button>
+      </div>
+
+      <div id="result" class="result">
+        <div id="resultStatus" class="result-status"></div>
+        <div id="resultDetails" class="result-details"></div>
+      </div>
+
+      <button id="tryAgainButton" class="try-again">
+        Try Again with a New Song
+      </button>
+
+      <div id="errorMessage" class="error-message"></div>
+    </section>
+  </main>
+
+  <audio id="audioPlayer" preload="auto"></audio>
+
+  <script>
+    const SONGS = [
+      { number: 1, title: 'We Shall Not Be Moved', arranger: 'Shyam', src: '1-1.mp3' },
+      { number: 2, title: 'Hallelujah I’m Travelin’', arranger: 'Alyse', src: '1-2.mp3' },
+      { number: 3, title: 'Eyes on the Prize', arranger: 'Asha', src: '1-3.mp3' },
+      { number: 4, title: 'A Change is Gonna Come', arranger: 'Tommy', src: '1-4.mp3' }
+    ];
+
+    const songStatus = document.getElementById("songStatus");
+    const playButton = document.getElementById("playButton");
+    const tryAgainButton = document.getElementById("tryAgainButton");
+    const audioPlayer = document.getElementById("audioPlayer");
+    const result = document.getElementById("result");
+    const resultStatus = document.getElementById("resultStatus");
+    const resultDetails = document.getElementById("resultDetails");
+    const errorMessage = document.getElementById("errorMessage");
+    const optionButtons = Array.from(document.querySelectorAll(".option-button"));
+
+    let currentSong = null;
+    let hasGuessed = false;
+    let songBag = [];
+
+    function shuffleArray(array) {
+      const copy = [...array];
+
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+
+      return copy;
+    }
+
+    function refillSongBag() {
+      songBag = shuffleArray(SONGS);
+
+      if (currentSong && songBag.length > 1 && songBag[0].src === currentSong.src) {
+        const swapIndex = songBag.findIndex(song => song.src !== currentSong.src);
+        if (swapIndex > 0) {
+          [songBag[0], songBag[swapIndex]] = [songBag[swapIndex], songBag[0]];
+        }
+      }
+    }
+
+    function chooseNextSong() {
+      stopAudio();
+
+      if (songBag.length === 0) {
+        refillSongBag();
+      }
+
+      currentSong = songBag.shift();
+
+      audioPlayer.src = currentSong.src;
+      audioPlayer.load();
+
+      hasGuessed = false;
+
+      songStatus.textContent = "A mystery song is ready.";
+      errorMessage.classList.remove("visible");
+      errorMessage.textContent = "";
+
+      result.classList.remove("visible");
+      resultStatus.textContent = "";
+      resultDetails.textContent = "";
+
+      optionButtons.forEach(button => {
+        button.disabled = false;
+        button.classList.remove("selected-correct", "selected-wrong");
+      });
+
+      playButton.disabled = false;
+      tryAgainButton.disabled = false;
+    }
+
+    function stopAudio() {
+      audioPlayer.pause();
+      audioPlayer.currentTime = 0;
+      playButton.classList.remove("playing");
+      playButton.textContent = "▶";
+    }
+
+    function togglePlay() {
+      if (!currentSong) return;
+
+      if (audioPlayer.paused) {
+        audioPlayer.play().then(() => {
+          playButton.classList.add("playing");
+          playButton.textContent = "❚❚";
+        }).catch(() => {
+          showError(
+            "The audio file could not be played. Make sure this page is in the same folder as " + currentSong.src + "."
+          );
+        });
+      } else {
+        audioPlayer.pause();
+        playButton.classList.remove("playing");
+        playButton.textContent = "▶";
+      }
+    }
+
+    function makeGuess(guessNumber, clickedButton) {
+      if (!currentSong || hasGuessed) return;
+
+      hasGuessed = true;
+
+      const isCorrect = Number(guessNumber) === currentSong.number;
+
+      result.classList.add("visible");
+      resultStatus.textContent = isCorrect ? "Correct" : "Not quite";
+
+      resultDetails.innerHTML = `
+        Correct answer: <strong>${currentSong.number}. ${escapeHTML(currentSong.title)}</strong><br>
+        Student arranger: <strong>${escapeHTML(currentSong.arranger)}</strong>
+      `;
+
+      optionButtons.forEach(button => {
+        button.disabled = true;
+
+        if (Number(button.dataset.answer) === currentSong.number) {
+          button.classList.add("selected-correct");
+        }
+      });
+
+      if (!isCorrect) {
+        clickedButton.classList.add("selected-wrong");
+      }
+    }
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.classList.add("visible");
+    }
+
+    function escapeHTML(str) {
+      return String(str).replace(/[&<>"']/g, char => {
+        const map = {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;"
+        };
+        return map[char];
+      });
+    }
+
+    playButton.addEventListener("click", togglePlay);
+    tryAgainButton.addEventListener("click", chooseNextSong);
+
+    audioPlayer.addEventListener("ended", () => {
+      playButton.classList.remove("playing");
+      playButton.textContent = "▶";
+    });
+
+    optionButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        makeGuess(button.dataset.answer, button);
+      });
+    });
+
+    chooseNextSong();
+  </script>
+</body>
+</html>
